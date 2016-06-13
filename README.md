@@ -11,7 +11,36 @@
 
 Generate imports for jsx img elements. A handy transform for use in webpack workflows.
 
-## Getting Started
+
+## Example
+
+### In
+
+```javascript
+var profile = <div>
+  <img src="avatar.png" className="profile" />
+  <h3>{[user.firstName, user.lastName].join(' ')}</h3>
+</div>;
+```
+
+### Out
+
+```javascript
+var _avatar = require("avatar.png");
+
+var _image = _interopRequireWildcard(_avatar);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+var profile = React.createElement( "div", null,
+  React.createElement("img", { src: _image.default, className: "profile" }),
+  React.createElement( "h3", null, [user.firstName, user.lastName].join(' ') )
+);
+
+```
+
+
+## Installation
 
 Install it via npm:
 
@@ -19,11 +48,31 @@ Install it via npm:
 npm install babel-plugin-transform-react-jsx-img-import
 ```
 
-And include in your project:
+## Usage
+
+### Via .babelrc (Recommended)
+.babelrc
 
 ```javascript
-import babel-plugin-transform-react-jsx-img-import from 'babel-plugin-transform-react-jsx-img-import';
+{
+  "plugins": ["transform-react-jsx-img-import"]
+}
 ```
+
+### Via CLI
+
+```shell
+$ babel --plugins transform-react-jsx-img-import script.js
+```
+
+### Via Node API
+
+```javascript
+require("babel-core").transform("code", {
+  plugins: ["transform-react-jsx-img-import"]
+});
+```
+
 
 ## License
 
