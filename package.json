@@ -1,11 +1,19 @@
 {
   "name": "babel-plugin-transform-react-jsx-img-import",
   "description": "Generate imports for jsx img elements. A handy transform for use in webpack workflows.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "main": "lib/index.js",
   "author": "gvelo",
   "repository": "gvelo/babel-plugin-transform-react-jsx-img-import",
   "license": "MIT",
+  "keywords": [
+    "babel",
+    "babel-plugin",
+    "webpack",
+    "image",
+    "jsx",
+    "react"
+  ],
   "scripts": {
     "compile": "babel src --out-dir lib",
     "coveralls": "cat ./coverage/lcov.info | coveralls",
