@@ -49,4 +49,9 @@ describe('Transform jsx images', () => {
     runFixture('importSameImg')
   });
 
+  it('should not generate import if img src is a url',() => {
+    runFixture('ignoreURL')
+  });
+
+
 });

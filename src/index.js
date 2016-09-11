@@ -1,4 +1,3 @@
-import * as t from 'babel-types'
 import _ from 'lodash'
 
 let imgImportIdentifiers = {};
@@ -33,6 +32,12 @@ function getImgSrcNodePath (path) {
   }
 }
 
+function isURL( url ) {
+
+  let lowerURL = url.toLowerCase()
+  return lowerURL.startsWith('http://') || lowerURL.startsWith('https://')
+
+}
 
 export default function ({ types: t }) {
 
@@ -49,21 +54,24 @@ export default function ({ types: t }) {
 
               let srcValue = imgSrcNodePath.node.value;
 
-              // cache import identifiers.
-              let imgImportIdentifier = imgImportIdentifiers[srcValue]
+              // Ignore URL src
+              if ( ! isURL (srcValue) ) {
 
-              if( !imgImportIdentifier ){
-                imgImportIdentifier = rootScope.generateUidIdentifier('image');
-                imgImportIdentifiers[srcValue]=imgImportIdentifier
-              }
+                // cache import identifiers.
+                let imgImportIdentifier = imgImportIdentifiers[srcValue]
 
-              // We need to access the default import since Babel shim non
-              // CommonJS modules.
-              let imgImportDefaultIdentifier = t.memberExpression(
-                imgImportIdentifier, t.identifier("default") )
+                if( !imgImportIdentifier ){
+                  imgImportIdentifier = rootScope.generateUidIdentifier('image');
+                  imgImportIdentifiers[srcValue]=imgImportIdentifier
+                }
 
-              imgSrcNodePath.replaceWith(imgImportDefaultIdentifier);
+                // We need to access the default import since Babel shim non
+                // CommonJS modules.
+                let imgImportDefaultIdentifier = t.memberExpression(
+                  imgImportIdentifier, t.identifier("default") )
 
+                imgSrcNodePath.replaceWith(imgImportDefaultIdentifier);
+            }
           }
         }
       },
