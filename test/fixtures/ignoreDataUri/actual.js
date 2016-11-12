@@ -1,0 +1,6 @@
+var profile =
+<div>
+  <div>
+    <img src="data:image/gif;base64,R0lGODlhEAAJAPAAAP///wAAACH5BAEAAAAALAAAAAAQAAkAAAJsIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCADs=" className="logo" />
+  </div>
+</div>;

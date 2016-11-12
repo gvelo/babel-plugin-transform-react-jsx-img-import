@@ -57,6 +57,10 @@ describe('Transform jsx images', () => {
     runFixture('overrideTransformation')
   });
 
+  it('should not generate import if img src is a data URI',() => {
+    runFixture('ignoreDataUri')
+  });
+
 
 
 });

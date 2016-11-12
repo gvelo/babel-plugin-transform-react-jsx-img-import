@@ -35,7 +35,7 @@ function getImgSrcNodePath(path) {
 function isURL(url) {
 
   let lowerURL = url.toLowerCase()
-  return lowerURL.startsWith('http://') || lowerURL.startsWith('https://')
+  return lowerURL.startsWith('http://') || lowerURL.startsWith('https://') || lowerURL.startsWith('data:')
 
 }
 
