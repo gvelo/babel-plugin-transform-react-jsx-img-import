@@ -9,22 +9,22 @@ function isReactCreateElement(path) {
 
 function hasImgArgument(path) {
   return path.get('arguments').length > 1 &&
-         path.get('arguments')[0].isStringLiteral({value:'img'})
+    path.get('arguments')[0].isStringLiteral({value: 'img'})
 }
 
-function getImgSrcNodePath (path) {
+function getImgSrcNodePath(path) {
 
-  if ( path.get('arguments')[1].isObjectExpression() ){
+  if (path.get('arguments')[1].isObjectExpression()) {
 
     let props = path.get('arguments')[1].get("properties");
 
-    for ( let prop of props ){
+    for (let prop of props) {
 
       if (!prop.isProperty()) continue;
 
       let key = prop.get("key");
 
-      if( key.isIdentifier( { name: 'src' } ) ){
+      if (key.isIdentifier({name: 'src'})) {
         return prop.get("value");
       }
 
@@ -32,66 +32,91 @@ function getImgSrcNodePath (path) {
   }
 }
 
-function isURL( url ) {
+function isURL(url) {
 
   let lowerURL = url.toLowerCase()
   return lowerURL.startsWith('http://') || lowerURL.startsWith('https://')
 
 }
 
-export default function ({ types: t }) {
+function transformImgSrcNodePath(imgSrcNodePath, t) {
+
+  if (imgSrcNodePath.isStringLiteral() && !imgSrcNodePath.state._img_import_processed) {
+
+    let srcValue = imgSrcNodePath.node.value;
+
+    // Override transformation
+    if (srcValue.startsWith('!')) {
+      imgSrcNodePath.state._img_import_processed = true
+      return t.stringLiteral(srcValue.substring(1));
+    }
+
+    // Ignore if src is an absolute URL
+    if (isURL(srcValue)) {
+      return imgSrcNodePath
+    }
+
+    // cache import identifiers.
+    let imgImportIdentifier = imgImportIdentifiers[srcValue]
+
+    if (!imgImportIdentifier) {
+      imgImportIdentifier = rootScope.generateUidIdentifier('image');
+      imgImportIdentifiers[srcValue] = imgImportIdentifier
+    }
+
+    // We need to access the default import since Babel shim non
+    // CommonJS modules.
+    let imgImportDefaultIdentifier = t.memberExpression(
+      imgImportIdentifier, t.identifier("default"))
+
+    return imgImportDefaultIdentifier;
+
+  } else {
+
+    return imgSrcNodePath;
+
+  }
+
+
+}
+
+export default function ({types: t}) {
 
   return {
     visitor: {
 
       CallExpression(path, state) {
 
-        if( isReactCreateElement( path ) &&  hasImgArgument( path )  ){
+        if (isReactCreateElement(path) && hasImgArgument(path)) {
 
-          let imgSrcNodePath = getImgSrcNodePath( path );
+          let imgSrcNodePath = getImgSrcNodePath(path);
 
-          if ( imgSrcNodePath && imgSrcNodePath.isStringLiteral() ) {
+          if (imgSrcNodePath) {
 
-              let srcValue = imgSrcNodePath.node.value;
+            let newSrcNodePath = transformImgSrcNodePath(imgSrcNodePath, t)
 
-              // Ignore URL src
-              if ( ! isURL (srcValue) ) {
+            imgSrcNodePath.replaceWith(newSrcNodePath);
 
-                // cache import identifiers.
-                let imgImportIdentifier = imgImportIdentifiers[srcValue]
-
-                if( !imgImportIdentifier ){
-                  imgImportIdentifier = rootScope.generateUidIdentifier('image');
-                  imgImportIdentifiers[srcValue]=imgImportIdentifier
-                }
-
-                // We need to access the default import since Babel shim non
-                // CommonJS modules.
-                let imgImportDefaultIdentifier = t.memberExpression(
-                  imgImportIdentifier, t.identifier("default") )
-
-                imgSrcNodePath.replaceWith(imgImportDefaultIdentifier);
-            }
           }
         }
       },
 
       Program: {
 
-        exit(path,state){
+        exit(path, state){
 
-          const importDeclarations = _.map(imgImportIdentifiers,(imgImportIdentifier,imgSrcLiteral) => {
+          const importDeclarations = _.map(imgImportIdentifiers, (imgImportIdentifier, imgSrcLiteral) => {
             return t.importDeclaration(
-              [t.importNamespaceSpecifier( imgImportIdentifier )] ,
-              t.stringLiteral(imgSrcLiteral) )
+              [t.importNamespaceSpecifier(imgImportIdentifier)],
+              t.stringLiteral(imgSrcLiteral))
           })
 
           path.unshiftContainer('body', importDeclarations);
 
         },
-        enter(path,state){
+        enter(path, state){
           imgImportIdentifiers = {};
-          rootScope=path.scope;
+          rootScope = path.scope;
         }
 
       }

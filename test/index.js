@@ -53,5 +53,10 @@ describe('Transform jsx images', () => {
     runFixture('ignoreURL')
   });
 
+  it('should not generate import if img src start with !',() => {
+    runFixture('overrideTransformation')
+  });
+
+
 
 });
