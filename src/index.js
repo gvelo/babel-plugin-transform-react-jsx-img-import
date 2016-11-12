@@ -41,13 +41,13 @@ function isURL(url) {
 
 function transformImgSrcNodePath(imgSrcNodePath, t) {
 
-  if (imgSrcNodePath.isStringLiteral() && !imgSrcNodePath.state._img_import_processed) {
+  if (imgSrcNodePath.isStringLiteral() && !imgSrcNodePath._img_import_processed) {
 
     let srcValue = imgSrcNodePath.node.value;
 
     // Override transformation
     if (srcValue.startsWith('!')) {
-      imgSrcNodePath.state._img_import_processed = true
+      imgSrcNodePath._img_import_processed = true
       return t.stringLiteral(srcValue.substring(1));
     }
 
