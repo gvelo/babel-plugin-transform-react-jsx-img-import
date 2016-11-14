@@ -61,6 +61,13 @@ describe('Transform jsx images', () => {
     runFixture('ignoreDataUri')
   });
 
+  it('should import all img in a srcSet',() => {
+    runFixture('importSrcSet')
+  });
+
+
+
+
 
 
 });

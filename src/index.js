@@ -12,7 +12,7 @@ function hasImgArgument(path) {
     path.get('arguments')[0].isStringLiteral({value: 'img'})
 }
 
-function getImgSrcNodePath(path) {
+function getPropertyValue(path, propertyName) {
 
   if (path.get('arguments')[1].isObjectExpression()) {
 
@@ -24,7 +24,7 @@ function getImgSrcNodePath(path) {
 
       let key = prop.get("key");
 
-      if (key.isIdentifier({name: 'src'})) {
+      if (key.isIdentifier({name: propertyName})) {
         return prop.get("value");
       }
 
@@ -43,33 +43,9 @@ function transformImgSrcNodePath(imgSrcNodePath, t) {
 
   if (imgSrcNodePath.isStringLiteral() && !imgSrcNodePath._img_import_processed) {
 
-    let srcValue = imgSrcNodePath.node.value;
+    imgSrcNodePath._img_import_processed = true;
 
-    // Override transformation
-    if (srcValue.startsWith('!')) {
-      imgSrcNodePath._img_import_processed = true
-      return t.stringLiteral(srcValue.substring(1));
-    }
-
-    // Ignore if src is an absolute URL
-    if (isURL(srcValue)) {
-      return imgSrcNodePath
-    }
-
-    // cache import identifiers.
-    let imgImportIdentifier = imgImportIdentifiers[srcValue]
-
-    if (!imgImportIdentifier) {
-      imgImportIdentifier = rootScope.generateUidIdentifier('image');
-      imgImportIdentifiers[srcValue] = imgImportIdentifier
-    }
-
-    // We need to access the default import since Babel shim non
-    // CommonJS modules.
-    let imgImportDefaultIdentifier = t.memberExpression(
-      imgImportIdentifier, t.identifier("default"))
-
-    return imgImportDefaultIdentifier;
+    return createImport( imgSrcNodePath.node.value , t);
 
   } else {
 
@@ -80,6 +56,90 @@ function transformImgSrcNodePath(imgSrcNodePath, t) {
 
 }
 
+function parseSrcSetValue( srcSetValue ) {
+
+  const imgList = srcSetValue.split(',').map(function ( img ) {
+    const [imgSrc,descriptor]=img.trim().split(' ');
+    return {imgSrc,descriptor}
+  })
+
+  return imgList;
+
+}
+
+function createImport( imgSrc , t){
+
+  // Override transformation
+  if (imgSrc.startsWith('!')) {
+    return t.stringLiteral(imgSrc.substring(1));
+  }
+
+  // Ignore if src is an absolute URL
+  if (isURL(imgSrc)) {
+    return t.stringLiteral(imgSrc);
+  }
+
+  // cache import identifiers.
+  let imgImportIdentifier = imgImportIdentifiers[imgSrc]
+
+  if (!imgImportIdentifier) {
+    imgImportIdentifier = rootScope.generateUidIdentifier('image');
+    imgImportIdentifiers[imgSrc] = imgImportIdentifier
+  }
+
+  // We need to access the default import since Babel shim non
+  // CommonJS modules.
+  let imgImportDefaultIdentifier = t.memberExpression(
+    imgImportIdentifier, t.identifier("default"))
+
+  return imgImportDefaultIdentifier;
+
+}
+
+function transformImgSrcSetNodePath(imgSrcSetValueNodePath, t) {
+
+  if (imgSrcSetValueNodePath.isStringLiteral() ) {
+
+    let srcSetValue = imgSrcSetValueNodePath.node.value;
+
+    let srcSetList = parseSrcSetValue(srcSetValue);
+
+    const srcSetValues = srcSetList.map(function (srcSetElement) {
+
+      const imgSrc = createImport(srcSetElement.imgSrc,t);
+      const descriptor = ( srcSetElement.descriptor ) ?
+        t.stringLiteral(srcSetElement.descriptor) : t.stringLiteral('')
+
+      return {imgSrc,descriptor}
+
+    })
+
+    const srcSetExpression = srcSetValues.reduce(function (prev, current,i) {
+
+      let exp =  t.binaryExpression( '+',
+        t.binaryExpression( '+', current.imgSrc , t.stringLiteral(' ') ),
+        current.descriptor );
+
+      if ( i < srcSetValues.length - 1 ){
+        exp = t.binaryExpression( '+', exp, t.stringLiteral(', '))
+      }
+
+      if ( prev ){
+        exp = t.binaryExpression( '+' ,  prev , exp )
+      }
+
+      return exp;
+
+    },null)
+
+    return srcSetExpression;
+
+  } else {
+    return imgSrcSetValueNodePath;
+  }
+
+}
+
 export default function ({types: t}) {
 
   return {
@@ -87,17 +147,34 @@ export default function ({types: t}) {
 
       CallExpression(path, state) {
 
+        // is a React.createElement("img" .... )
         if (isReactCreateElement(path) && hasImgArgument(path)) {
 
-          let imgSrcNodePath = getImgSrcNodePath(path);
+          // process src
+          let imgSrcValueNodePath = getPropertyValue(path,'src');
 
-          if (imgSrcNodePath) {
+          if (imgSrcValueNodePath) {
 
-            let newSrcNodePath = transformImgSrcNodePath(imgSrcNodePath, t)
+            let newSrcValueNodePath = transformImgSrcNodePath(imgSrcValueNodePath, t)
 
-            imgSrcNodePath.replaceWith(newSrcNodePath);
+            imgSrcValueNodePath.replaceWith(newSrcValueNodePath);
 
           }
+
+
+
+          // process srcSet
+          let imgSrcSetValueNodePath = getPropertyValue(path,'srcSet');
+
+          if ( imgSrcSetValueNodePath ){
+
+            let newSrcSetValueNodePath = transformImgSrcSetNodePath(imgSrcSetValueNodePath, t)
+
+            imgSrcSetValueNodePath.replaceWith(newSrcSetValueNodePath)
+
+          }
+
+
         }
       },
 
