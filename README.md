@@ -12,6 +12,17 @@
 Generate imports for jsx img elements. A handy transform for use in webpack workflows.
 
 
+## Exclude elements from transformation
+
+Prefix a img src with "!" to exclude it from the transformation.
+
+```javascript
+var profile = <div>
+  <img src="!avatar.png" className="profile" />
+</div>;
+```
+
+
 ## Example
 
 ### In
