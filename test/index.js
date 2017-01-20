@@ -65,6 +65,10 @@ describe('Transform jsx images', () => {
     runFixture('importSrcSet')
   });
 
+  it('should generate an import for the SVG image href when image href is literal',() => {
+    runFixture('importSvgImage')
+  });
+
 
 
 
