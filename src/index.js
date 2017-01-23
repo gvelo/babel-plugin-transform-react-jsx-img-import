@@ -12,6 +12,11 @@ function hasImgArgument(path) {
     path.get('arguments')[0].isStringLiteral({value: 'img'})
 }
 
+function hasSvgImageArgument(path) {
+  return path.get('arguments').length > 1 &&
+    path.get('arguments')[0].isStringLiteral({value: 'image'})
+}
+
 function getPropertyValue(path, propertyName) {
 
   if (path.get('arguments')[1].isObjectExpression()) {
@@ -50,6 +55,23 @@ function transformImgSrcNodePath(imgSrcNodePath, t) {
   } else {
 
     return imgSrcNodePath;
+
+  }
+
+
+}
+
+function transformSvgImageHrefNodePath(svgImageHrefNodePath, t) {
+
+  if (svgImageHrefNodePath.isStringLiteral() && !svgImageHrefNodePath._img_import_processed) {
+
+    svgImageHrefNodePath._img_import_processed = true;
+
+    return createImport( svgImageHrefNodePath.node.value , t);
+
+  } else {
+
+    return svgImageHrefNodePath;
 
   }
 
@@ -174,6 +196,19 @@ export default function ({types: t}) {
 
           }
 
+
+        } else if (isReactCreateElement(path) && hasSvgImageArgument(path)) {
+
+          // process href
+          let svgImageHrefValueNodePath = getPropertyValue(path,'href');
+
+          if (svgImageHrefValueNodePath) {
+
+            let newSvgImageHrefValueNodePath = transformSvgImageHrefNodePath(svgImageHrefValueNodePath, t)
+
+            svgImageHrefValueNodePath.replaceWith(newSvgImageHrefValueNodePath);
+
+          }
 
         }
       },
